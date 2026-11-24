@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Twitch Token Redirect</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background-color: #111;
+      color: #ddd;
+      padding: 0;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      text-align: center;
+      background-color: #222;
+      padding: 30px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      max-width: 500px;
+      width: 100%;
+      box-sizing: border-box;
+      margin: 12px;
+    }
+
+    h2 {
+      color: #4CAF50;
+    }
+
+    h2.error {
+      color: #ff5252;
+    }
+
+    #tokenBox {
+      background-color: #333;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #666;
+      margin-top: 20px;
+      word-break: break-all;
+      font-size: 14px;
+      color: #fff;
+      text-align: center;
+      min-height: 40px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 6px 12px;
+      font-size: 14px;
+      background-color: #9146FF;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #7a32db;
+    }
+
+    #note {
+      min-height: 20px;
+      margin: 16px 0 0;
+      font-size: 13px;
+      color: #9db3dc;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2 id="title">Токен Twitch отримано</h2>
+    <p id="hint">Скопіюйте токен нижче й вставте його в налаштування програми вручну:</p>
+    <div id="tokenBox">Завантаження…</div>
+    <button id="copyBtn">Скопіювати токен</button>
+    <p id="note"></p>
+  </div>
+
+  <script>
+    const APP_PORT = 3778;
+    const APP_STATE_PREFIX = "uaclipbot-";
+
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const queryParams = new URLSearchParams(window.location.search);
+    const param = name => hashParams.get(name) || queryParams.get(name);
+
+    const token = param("access_token");
+    const error = param("error_description") || param("error");
+    const state = param("state") || "";
+
+    const title = document.getElementById("title");
+    const hint = document.getElementById("hint");
+    const tokenBox = document.getElementById("tokenBox");
+    const copyBtn = document.getElementById("copyBtn");
+    const note = document.getElementById("note");
+
+    if (token) {
+      tokenBox.textContent = token;
+    } else {
+      title.textContent = "Токен не отримано";
+      title.className = "error";
+      hint.textContent = "";
+      tokenBox.textContent = error || "У посиланні немає токена";
+      copyBtn.style.display = "none";
+    }
+
+    copyBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(token).then(() => {
+        copyBtn.textContent = "Скопійовано ✔";
+        setTimeout(() => { copyBtn.textContent = "Скопіювати токен"; }, 2000);
+      });
+    });
+
+    if (state.startsWith(APP_STATE_PREFIX) && (token || error)) {
+      const out = new URLSearchParams({ state });
+      if (token) out.set("access_token", token);
+      else out.set("error_description", error);
+
+      note.textContent = "Передаю результат у UaClipBot…";
+      setTimeout(() => {
+        window.location.href = "http://127.0.0.1:" + APP_PORT + "/?" + out.toString();
+      }, 700);
+    }
+  </script>
+
+</body>
+</html>
